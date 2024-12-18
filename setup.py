@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="linedify",
-    version="0.3.1",
-    url="https://github.com/uezo/linedify",
+    name="linedify-kchihogi",
+    version="0.3.1-fork",
+    url="https://github.com/kchihogi/linedify",
     author="uezo",
     author_email="uezo@uezo.net",
-    maintainer="uezo",
-    maintainer_email="uezo@uezo.net",
-    description="💬⚡ linedify: Supercharging your LINE Bot with Dify power!",
+    maintainer="kchihogi",
+    maintainer_email="kchihogi@gmail.com",
+    description="Forked version of linedify@0.3.1",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=["examples*", "tests*"]),
