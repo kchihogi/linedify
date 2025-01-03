@@ -16,7 +16,8 @@ def line_dify():
         dify_user=os.environ.get("DIFY_USER"),
         dify_type=DifyType.Agent,
         session_db_url="sqlite:///test_sessions.db",
-        session_timeout=3
+        session_timeout=3,
+        verbose=os.environ.get("VERBOSE", False)
     )
 
     class AsyncIteratorWrapper:
