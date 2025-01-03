@@ -40,7 +40,8 @@ class LineDifyIntegrator:
         dify_type: DifyType = DifyType.Agent,
         session_db_url: str = "sqlite:///sessions.db",
         session_timeout: float = 3600.0,
-        verbose: bool = False
+        verbose: bool = False,
+        end_user_mode: bool = False
     ) -> None:
 
         self.verbose = verbose
@@ -83,6 +84,8 @@ class LineDifyIntegrator:
         self._make_inputs = self.make_inputs_default
         self._to_reply_message = self.to_reply_message_default
         self._to_error_message = self.to_error_message_default
+
+        self.end_user_mode = end_user_mode
 
     # Decorators
     def event(self, event_type=None):
@@ -164,6 +167,10 @@ class LineDifyIntegrator:
             request_text, image_bytes = await parse_message(event.message)
             conversation_session = await self.conversation_session_store.get_session(event.source.user_id)
             inputs = await self._make_inputs(conversation_session)
+
+            if self.end_user_mode:
+                user_id = event.source.user_id
+                self.dify_agent.user = user_id
 
             conversation_id, text, data = await self.dify_agent.invoke(
                 conversation_session.conversation_id,

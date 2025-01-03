@@ -191,3 +191,12 @@ async def test_to_error_message(line_dify):
 
     reply_messages = await line_dify.process_event(to_message_event("hello"))
     assert reply_messages[0].text == "Custom error message"
+
+@pytest.mark.asyncio
+async def test_end_user_mode(line_dify):
+    line_dify.end_user_mode = True
+
+    reply_messages = await line_dify.process_event(to_message_event("hello"))
+    assert "hello" in reply_messages[0].text.lower()
+    assert line_dify.dify_agent.user == "U1234xx5f678x90x123456x78x9012xx3"
+    line_dify.end_user_mode = False
