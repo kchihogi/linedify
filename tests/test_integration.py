@@ -14,7 +14,9 @@ def line_dify():
         dify_api_key=os.environ.get("DIFY_API_KEY"),
         dify_base_url=os.environ.get("DIFY_BASE_URL"),
         dify_user=os.environ.get("DIFY_USER"),
-        dify_type=DifyType.Agent
+        dify_type=DifyType.Agent,
+        session_db_url="sqlite:///test_sessions.db",
+        session_timeout=3
     )
 
     class AsyncIteratorWrapper:
