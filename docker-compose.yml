@@ -1,0 +1,11 @@
+services:
+  app:
+    container_name: line-dify-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    command: ["sleep", "infinity"]
+    env_file:
+      - .env

@@ -1,0 +1,29 @@
+{
+	"name": "Line Dify Dev Container",
+	"dockerComposeFile": "../docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/app",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"python.pythonPath": "/usr/bin/python3",
+				"terminal.integrated.shell.linux": "/bin/bash",
+				"workbench.colorTheme": "Cobalt2"
+			},
+			"extensions": [
+				"ms-python.python",
+				"ms-python.autopep8",
+				"ms-python.isort",
+				"ms-toolsai.jupyter",
+				"njpwerner.autodocstring",
+				"oderwat.indent-rainbow",
+				"GitHub.copilot",
+				"mechatroner.rainbow-csv",
+				"tomoki1207.pdf",
+				"wesbos.theme-cobalt2",
+				"qwtel.sqlite-viewer"
+			]
+		}
+	},
+	"remoteUser": "root"
+}
