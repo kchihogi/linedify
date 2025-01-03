@@ -163,3 +163,6 @@ examples/
 pytest.ini
 .DS_store
 *.db
+
+# vscode
+.vscode/
