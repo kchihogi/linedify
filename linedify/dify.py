@@ -35,7 +35,7 @@ class DifyAgent:
         payloads = {
             "inputs": inputs or {},
             "query": text,
-            "response_mode": "streaming" if self.type == DifyType.Agent else "blocking",
+            "response_mode": "streaming" if self.type == DifyType.Agent or self.type == DifyType.Chatbot else "blocking",
             "user": self.user,
             "auto_generate_name": False,
         }
@@ -116,15 +116,42 @@ class DifyAgent:
 
         return conversation_id, response_text, response_data
 
-    async def process_chatbot_response(self, response: aiohttp.ClientResponse) -> Tuple[str, str, Dict]:
-        response_json = await response.json()
+    async def process_chatbot_response(self, response: aiohttp.ClientResponse) -> Tuple[str, str, Dict]:    
+        conversation_id = ""
+        response_text = ""
+        response_data = {}
 
-        if self.verbose:
-            logger.info(f"Response from Dify: {json.dumps(response_json, ensure_ascii=False)}")
+        async for r in response.content:
+            decoded_r = r.decode("utf-8")
+            if not decoded_r.startswith("data:"):
+                continue
+            chunk = json.loads(decoded_r[5:])
 
-        conversation_id = response_json["conversation_id"]
-        response_text = response_json["answer"]
-        return conversation_id, response_text, {}
+            if self.verbose:
+                logger.debug(f"Chunk from Dify: {json.dumps(chunk, ensure_ascii=False)}")
+
+            event_type = chunk["event"]
+
+            if event_type == "agent_message ":
+                conversation_id = chunk["conversation_id"]
+                response_text += chunk["answer"]
+
+            elif event_type == "message_end":
+                if retriever_resources := chunk["metadata"].get("retriever_resources"):
+                    response_data["retriever_resources"] = retriever_resources
+
+            elif event_type == "message_file":
+                file_obj = {
+                    "base_url": self.base_url.rstrip("/"), # Remove trailing slash
+                    "url": chunk["url"] if chunk.get("url") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "type": chunk["type"] if chunk.get("type") else None,
+                    "belongs_to": chunk["belongs_to"] if chunk.get("belongs_to") else None,
+                    "conversation_id": chunk["conversation_id"] if chunk.get("conversation_id") else None,
+                }
+                response_data["files"] = response_data.get("files", []) + [file_obj]
+
+        return conversation_id, response_text, response_data
 
     async def process_textgenerator_response(self, response: aiohttp.ClientResponse) -> Tuple[str, str, Dict]:
         if self.verbose:
