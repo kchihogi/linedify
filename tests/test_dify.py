@@ -72,3 +72,13 @@ async def test_invoke_with_image(dify_agent, image_bytes):
     assert "girl" in response_text.lower()
     assert response_data == {}
     assert conversation_id is not None
+
+@pytest.mark.asyncio
+async def test_invoke_and_download_image(dify_agent):
+    conversation_id, response_text, response_data = await dify_agent.invoke(conversation_id=None, text="Create an image of cat girl.")
+
+    assert response_data["files"] is not None
+    assert len(response_data["files"]) > 0
+    for file in response_data["files"]:
+        assert file["url"] is not None
+        assert file["id"] is not None

@@ -103,6 +103,17 @@ class DifyAgent:
                 if retriever_resources := chunk["metadata"].get("retriever_resources"):
                     response_data["retriever_resources"] = retriever_resources
 
+            elif event_type == "message_file":
+                file_obj = {
+                    "base_url": self.base_url.rstrip("/"), # Remove trailing slash
+                    "url": chunk["url"] if chunk.get("url") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "type": chunk["type"] if chunk.get("type") else None,
+                    "belongs_to": chunk["belongs_to"] if chunk.get("belongs_to") else None,
+                    "conversation_id": chunk["conversation_id"] if chunk.get("conversation_id") else None,
+                }
+                response_data["files"] = response_data.get("files", []) + [file_obj]
+
         return conversation_id, response_text, response_data
 
     async def process_chatbot_response(self, response: aiohttp.ClientResponse) -> Tuple[str, str, Dict]:
