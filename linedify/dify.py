@@ -35,7 +35,7 @@ class DifyAgent:
         payloads = {
             "inputs": inputs or {},
             "query": text,
-            "response_mode": "streaming" if self.type == DifyType.Agent else "blocking",
+            "response_mode": "streaming" if self.type == DifyType.Agent or self.type == DifyType.Workflow else "blocking",
             "user": self.user,
             "auto_generate_name": False,
         }
@@ -133,10 +133,97 @@ class DifyAgent:
         raise Exception("TextGenerator is not supported for now.")
 
     async def process_workflow_response(self, response: aiohttp.ClientResponse) -> Tuple[str, str, Dict]:
-        if self.verbose:
-            logger.info(f"Response from Dify: {json.dumps(await response.json(), ensure_ascii=False)}")
+        conversation_id = ""
+        response_text = ""
+        response_data = {}
 
-        raise Exception("Workflow is not supported for now.")
+        async for r in response.content:
+            decoded_r = r.decode("utf-8")
+            if not decoded_r.startswith("data:"):
+                continue
+            chunk = json.loads(decoded_r[5:])
+
+            if self.verbose:
+                logger.debug(f"Chunk from Dify: {json.dumps(chunk, ensure_ascii=False)}")
+
+            event_type = chunk["event"]
+
+            if event_type == "message":
+                conversation_id = chunk["conversation_id"]
+                response_text += chunk["answer"]
+    
+            elif event_type == "message_end":
+                if retriever_resources := chunk["metadata"].get("retriever_resources"):
+                    response_data["retriever_resources"] = retriever_resources
+            
+            elif event_type == "workflow_started":
+                response_data["workflow_started"] = {
+                    "task_id": chunk["task_id"] if chunk.get("task_id") else None,
+                    "workflow_run_id": chunk["workflow_run_id"] if chunk.get("workflow_run_id") else None,
+                    "data": chunk["data"] if chunk.get("data") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "workflow_id": chunk["workflow_id"] if chunk.get("workflow_id") else None,
+                    "sequence_number": chunk["sequence_number"] if chunk.get("sequence_number") else None,
+                    "created_at": chunk["created_at"] if chunk.get("created_at") else None,
+                }
+
+            elif event_type == "workflow_ended":
+                response_data["workflow_ended"] = {
+                    "task_id": chunk["task_id"] if chunk.get("task_id") else None,
+                    "workflow_run_id": chunk["workflow_run_id"] if chunk.get("workflow_run_id") else None,
+                    "data": chunk["data"] if chunk.get("data") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "workflow_id": chunk["workflow_id"] if chunk.get("workflow_id") else None,
+                    "status": chunk["status"] if chunk.get("status") else None,
+                    "outputs": chunk["outputs"] if chunk.get("outputs") else None,
+                    "error": chunk["error"] if chunk.get("error") else None,
+                    "elapsed_time": chunk["elapsed_time"] if chunk.get("elapsed_time") else None,
+                    "total_tokens": chunk["total_tokens"] if chunk.get("total_tokens") else None,
+                    "total_steps": chunk["total_steps"] if chunk.get("total_steps") else None,
+                    "created_at": chunk["created_at"] if chunk.get("created_at") else None,
+                    "finished_at": chunk["finished_at"] if chunk.get("finished_at") else None,
+                }
+
+            elif event_type == "node_started":
+                response_data["node_started"] = response_data.get("node_started", []) + [{
+                    "task_id": chunk["task_id"] if chunk.get("task_id") else None,
+                    "workflow_run_id": chunk["workflow_run_id"] if chunk.get("workflow_run_id") else None,
+                    "data": chunk["data"] if chunk.get("data") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "node_id": chunk["node_id"] if chunk.get("node_id") else None,
+                    "node_type": chunk["node_type"] if chunk.get("node_type") else None,
+                    "title": chunk["title"] if chunk.get("title") else None,
+                    "index": chunk["index"] if chunk.get("index") else None,
+                    "predecessor_node_id": chunk["predecessor_node_id"] if chunk.get("predecessor_node_id") else None,
+                    "inputs": chunk["inputs"] if chunk.get("inputs") else None,
+                    "created_at": chunk["created_at"] if chunk.get("created_at") else None,
+                }]
+
+            elif event_type == "node_finished":
+                response_data["node_finished"] = response_data.get("node_finished", []) + [{
+                    "task_id": chunk["task_id"] if chunk.get("task_id") else None,
+                    "workflow_run_id": chunk["workflow_run_id"] if chunk.get("workflow_run_id") else None,
+                    "data": chunk["data"] if chunk.get("data") else None,
+                    "id": chunk["id"] if chunk.get("id") else None,
+                    "node_id": chunk["node_id"] if chunk.get("node_id") else None,
+                    "node_type": chunk["node_type"] if chunk.get("node_type") else None,
+                    "title": chunk["title"] if chunk.get("title") else None,
+                    "index": chunk["index"] if chunk.get("index") else None,
+                    "predecessor_node_id": chunk["predecessor_node_id"] if chunk.get("predecessor_node_id") else None,
+                    "inputs": chunk["inputs"] if chunk.get("inputs") else None,
+                    "process_data": chunk["process_data"] if chunk.get("process_data") else None,
+                    "outputs": chunk["outputs"] if chunk.get("outputs") else None,
+                    "status": chunk["status"] if chunk.get("status") else None,
+                    "error": chunk["error"] if chunk.get("error") else None,
+                    "elapsed_time": chunk["elapsed_time"] if chunk.get("elapsed_time") else None,
+                    "execution_metadata": chunk["execution_metadata"] if chunk.get("execution_metadata") else None,
+                    "total_tokens": chunk["total_tokens"] if chunk.get("total_tokens") else None,
+                    "total_price": chunk["total_price"] if chunk.get("total_price") else None,
+                    "currency": chunk["currency"] if chunk.get("currency") else None,
+                    "created_at": chunk["created_at"] if chunk.get("created_at") else None,
+                }]            
+
+        return conversation_id, response_text, response_data
 
     async def invoke(self, conversation_id: str, text: str = None, image: bytes = None, inputs: dict = None, start_as_new: bool = False) -> Tuple[str, Dict]:
         headers = {
