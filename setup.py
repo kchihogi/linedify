@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="linedify-kchihogi",
-    version="0.3.1+fork3",
+    version="0.3.1+fork4",
     url="https://github.com/kchihogi/linedify",
     author="uezo",
     author_email="uezo@uezo.net",
