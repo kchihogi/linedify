@@ -78,8 +78,15 @@ class DifyAgent:
         response_text = ""
         response_data = {}
 
-        async for r in response.content:
-            decoded_r = r.decode("utf-8")
+        buffer = b""
+        async for r in response.content.iter_any():
+            buffer += r
+            if b"\n\n" in buffer:
+                data, buffer = buffer.split(b"\n\n", 1)
+                decoded_r = data.decode("utf-8")
+            else:
+                continue
+
             if not decoded_r.startswith("data:"):
                 continue
             chunk = json.loads(decoded_r[5:])
@@ -137,8 +144,15 @@ class DifyAgent:
         response_text = ""
         response_data = {}
 
-        async for r in response.content:
-            decoded_r = r.decode("utf-8")
+        buffer = b""
+        async for r in response.content.iter_any():
+            buffer += r
+            if b"\n\n" in buffer:
+                data, buffer = buffer.split(b"\n\n", 1)
+                decoded_r = data.decode("utf-8")
+            else:
+                continue
+
             if not decoded_r.startswith("data:"):
                 continue
             chunk = json.loads(decoded_r[5:])
