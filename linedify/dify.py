@@ -83,13 +83,21 @@ class DifyAgent:
             buffer += r
             if b"\n\n" in buffer:
                 data, buffer = buffer.split(b"\n\n", 1)
-                decoded_r = data.decode("utf-8")
+                try:
+                    decoded_r = data.decode("utf-8")
+                except UnicodeDecodeError:
+                    buffer = data + "\n\n" + buffer
+                    continue
             else:
                 continue
 
             if not decoded_r.startswith("data:"):
                 continue
-            chunk = json.loads(decoded_r[5:])
+
+            try:
+                chunk = json.loads(decoded_r[5:])
+            except json.JSONDecodeError:
+                continue
 
             if self.verbose:
                 logger.debug(f"Chunk from Dify: {json.dumps(chunk, ensure_ascii=False)}")
@@ -149,13 +157,21 @@ class DifyAgent:
             buffer += r
             if b"\n\n" in buffer:
                 data, buffer = buffer.split(b"\n\n", 1)
-                decoded_r = data.decode("utf-8")
+                try:
+                    decoded_r = data.decode("utf-8")
+                except UnicodeDecodeError:
+                    buffer = data + "\n\n" + buffer
+                    continue
             else:
                 continue
 
             if not decoded_r.startswith("data:"):
                 continue
-            chunk = json.loads(decoded_r[5:])
+
+            try:
+                chunk = json.loads(decoded_r[5:])
+            except json.JSONDecodeError:
+                continue
 
             if self.verbose:
                 logger.debug(f"Chunk from Dify: {json.dumps(chunk, ensure_ascii=False)}")
